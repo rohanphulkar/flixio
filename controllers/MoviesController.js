@@ -10,9 +10,10 @@ export const getMovies = async (req, res) => {
       imdbRating,
       adult,
       rated,
+      category,
       sortBy,
       sortOrder = "asc",
-      page = 1,
+      skip = 0,
       limit = 25,
     } = req.query;
 
@@ -25,21 +26,21 @@ export const getMovies = async (req, res) => {
       const allWordsRegex = words.map((word) => `(?=.*${word})`).join("");
       const anyWordRegex = words.join("|");
 
-      allWordsFilter.Title = new RegExp(allWordsRegex, "i"); // case-insensitive search for all words
-      anyWordFilter.Title = new RegExp(anyWordRegex, "i"); // case-insensitive search for any word
+      allWordsFilter.Title = new RegExp(allWordsRegex, "i");
+      anyWordFilter.Title = new RegExp(anyWordRegex, "i");
     }
     if (genre) {
-      filter.Genre = new RegExp(genre, "i"); // case-insensitive search
+      filter.Genre = new RegExp(genre, "i");
       allWordsFilter.Genre = filter.Genre;
       anyWordFilter.Genre = filter.Genre;
     }
     if (type) {
-      filter.Type = new RegExp(type, "i"); // case-insensitive search
+      filter.Type = new RegExp(type, "i");
       allWordsFilter.Type = filter.Type;
       anyWordFilter.Type = filter.Type;
     }
     if (language) {
-      filter.Language = new RegExp(language, "i"); // case-insensitive search
+      filter.Language = new RegExp(language, "i");
       allWordsFilter.Language = filter.Language;
       anyWordFilter.Language = filter.Language;
     }
@@ -54,27 +55,29 @@ export const getMovies = async (req, res) => {
       anyWordFilter.Adult = filter.Adult;
     }
     if (rated) {
-      filter.Rated = new RegExp(rated, "i"); // case-insensitive search
+      filter.Rated = new RegExp(rated, "i");
       allWordsFilter.Rated = filter.Rated;
       anyWordFilter.Rated = filter.Rated;
+    }
+    if (category) {
+      filter.Category = category;
+      allWordsFilter.Category = category;
+      anyWordFilter.Category = category;
     }
 
     const sort = {};
     if (sortBy) sort[sortBy] = sortOrder === "desc" ? -1 : 1;
 
-    // Find movies containing all words
     const allWordsMovies = await Movie.find(allWordsFilter)
       .sort(sort)
-      .skip((page - 1) * limit)
+      .skip(parseInt(skip))
       .limit(parseInt(limit));
 
-    // Find movies containing any word
     const anyWordMovies = await Movie.find(anyWordFilter)
       .sort(sort)
-      .skip((page - 1) * limit)
+      .skip(parseInt(skip))
       .limit(parseInt(limit));
 
-    // Combine results, ensuring no duplicates and placing allWordsMovies first
     const movieSet = new Set(
       allWordsMovies.map((movie) => movie._id.toString())
     );
@@ -87,8 +90,8 @@ export const getMovies = async (req, res) => {
     return res.status(200).json({
       data: combinedMovies,
       total: totalMovies,
-      page: parseInt(page),
-      pages: Math.ceil(totalMovies / limit),
+      skip: parseInt(skip),
+      hasMore: parseInt(skip) + combinedMovies.length < totalMovies,
     });
   } catch (error) {
     return res
@@ -107,5 +110,22 @@ export const addMovie = async (req, res) => {
     return res
       .status(500)
       .json({ message: "Error adding movie", error: error.message });
+  }
+};
+
+export const getLatestMovies = async (req, res) => {
+  try {
+    const limit = 10;
+
+    const latestMovies = await Movie.find().sort({ Year: -1 }).limit(limit);
+
+    return res.status(200).json({
+      data: latestMovies,
+      total: latestMovies.length,
+    });
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ message: "Error fetching latest movies", error: error.message });
   }
 };
