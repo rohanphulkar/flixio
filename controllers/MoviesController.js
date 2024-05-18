@@ -60,9 +60,10 @@ export const getMovies = async (req, res) => {
       anyWordFilter.Rated = filter.Rated;
     }
     if (category) {
-      filter.Category = category;
-      allWordsFilter.Category = category;
-      anyWordFilter.Category = category;
+      const categories = Array.isArray(category) ? category : [category];
+      filter.Category = { $in: categories };
+      allWordsFilter.Category = { $in: categories };
+      anyWordFilter.Category = { $in: categories };
     }
 
     const sort = {};
