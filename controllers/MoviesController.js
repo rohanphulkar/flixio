@@ -134,7 +134,7 @@ export const getLatestMovies = async (req, res) => {
 export const getMovie = async (req, res) => {
   try {
     const { id } = req.params;
-    const movie = await Movie.find({
+    const movie = await Movie.findOne({
       imdbID: id,
     });
     return res.status(200).json(movie);
