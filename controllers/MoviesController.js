@@ -130,3 +130,17 @@ export const getLatestMovies = async (req, res) => {
       .json({ message: "Error fetching latest movies", error: error.message });
   }
 };
+
+export const getMovie = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const movie = await Movie.find({
+      imdbID: id,
+    });
+    return res.status(200).json(movie);
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ message: "Error fetching movie", error: error.message });
+  }
+};
